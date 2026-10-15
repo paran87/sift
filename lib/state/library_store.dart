@@ -139,7 +139,6 @@ class LibraryStore extends ChangeNotifier {
         service.loadRecentActivity(),
         service.loadInsights(),
         service.deletionIsRecoverable(),
-        service.loadAlbums(),
       ]);
       _overview = results[0] as LibraryOverview;
       _categories = results[1] as List<PhotoCategory>;
@@ -151,12 +150,25 @@ class LibraryStore extends ChangeNotifier {
         ..addAll(results[3] as List<ActivityEntry>);
       _baseInsights = results[4] as InsightsStats;
       _deletionRecoverable = results[5] as bool;
-      _albums = results[6] as List<PhotoAlbum>;
       _loaded = true;
     } catch (e) {
       _loadError = e;
     }
     notifyListeners();
+    if (_loaded) _loadAlbumsInBackground();
+  }
+
+  /// Albums aren't needed to start cleaning, so they fill in after the home
+  /// screen is already showing instead of making the scan wait for them.
+  Future<void> _loadAlbumsInBackground() async {
+    try {
+      final albums = await service.loadAlbums();
+      if (!_loaded) return; // library was reset meanwhile
+      _albums = albums;
+      notifyListeners();
+    } catch (_) {
+      // albums stay empty; the rest of the app is unaffected
+    }
   }
 
   /// Rescans the library and clears this run's review progress.

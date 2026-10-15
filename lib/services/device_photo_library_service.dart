@@ -30,6 +30,10 @@ class DevicePhotoLibraryService implements PhotoLibraryService {
   static const int _previewLongSide = 1440;
   static const ThumbnailSize _gridThumb = ThumbnailSize.square(320);
 
+  /// Platform-channel calls in flight at once: enough to keep the native side
+  /// busy without flooding the platform thread.
+  static const int _concurrency = 48;
+
   final ValueNotifier<double> _progress = ValueNotifier(0);
   Future<_Scan>? _scan;
   final Map<String, AssetPathEntity> _albumPaths = {};
@@ -101,37 +105,64 @@ class DevicePhotoLibraryService implements PhotoLibraryService {
     final total = await root.assetCountAsync;
     final count = min(total, scanLimit);
 
-    // 1. Metadata (cheap), newest first.
-    final entities = <AssetEntity>[];
-    const page = 250;
-    for (var start = 0; start < count; start += page) {
-      entities.addAll(await root.getAssetListRange(start: start, end: min(start + page, count)));
-      _progress.value = 0.25 * entities.length / max(count, 1);
+    // 1. Metadata (cheap), newest first: one native query for the whole range.
+    final entities = count == 0 ? <AssetEntity>[] : await root.getAssetListRange(start: 0, end: count);
+    _progress.value = 0.15;
+
+    // 2. Real file sizes AND burst fingerprints, concurrently. Fingerprints
+    // only need metadata, so they can start before the sizes are known.
+    final prints = <String, Future<_Fingerprint?>>{};
+    Future<_Fingerprint?> fingerprintOf(AssetEntity e) => prints.putIfAbsent(e.id, () => _fingerprint(e));
+
+    final byId = {for (final e in entities) e.id: e};
+    final provisional = [for (final e in entities) _toPhoto(e, 0)];
+    final burstIds = [
+      for (final run in _burstRuns(provisional.where((p) => p.type == MediaType.photo)))
+        for (final p in run) p.id,
+    ];
+
+    final work = entities.length + burstIds.length;
+    var done = 0;
+    void tick() {
+      done++;
+      // Report ~1% steps so the UI isn't rebuilt thousands of times.
+      final value = 0.15 + 0.85 * done / max(work, 1);
+      if (value - _progress.value >= 0.01) _progress.value = value;
     }
 
-    // 2. Real file sizes, in parallel batches.
     final sizes = List<int>.filled(entities.length, 0);
-    const batch = 40;
-    for (var i = 0; i < entities.length; i += batch) {
-      final end = min(i + batch, entities.length);
-      final chunk = await Future.wait([for (var j = i; j < end; j++) _fileSize(entities[j])]);
-      sizes.setRange(i, end, chunk);
-      _progress.value = 0.25 + 0.75 * end / entities.length;
-    }
+    await Future.wait([
+      _forEachPooled(entities.length, (i) async {
+        sizes[i] = await _fileSize(entities[i]);
+        tick();
+      }),
+      _forEachPooled(burstIds.length, (i) async {
+        await fingerprintOf(byId[burstIds[i]]!);
+        tick();
+      }),
+    ]);
 
-    final byId = <String, AssetEntity>{};
-    final photos = <Photo>[];
-    for (var i = 0; i < entities.length; i++) {
-      byId[entities[i].id] = entities[i];
-      photos.add(_toPhoto(entities[i], sizes[i]));
-    }
+    final photos = <Photo>[for (var i = 0; i < entities.length; i++) _toPhoto(entities[i], sizes[i])];
 
     final duplicates = _findDuplicates(photos);
     final inDuplicates = {for (final g in duplicates) ...g.photos.map((p) => p.id)};
-    final similar = await _findSimilar(photos, byId, exclude: inDuplicates);
+    final similar = await _findSimilar(photos, byId, fingerprintOf, exclude: inDuplicates);
 
     _progress.value = 1;
     return _Scan(total: total, photos: photos, entities: byId, duplicates: duplicates, similar: similar);
+  }
+
+  /// Runs `task(0..count-1)` with at most [_concurrency] in flight. A sliding
+  /// window: one slow item never stalls the rest, unlike fixed batches.
+  static Future<void> _forEachPooled(int count, Future<void> Function(int index) task) async {
+    var next = 0;
+    Future<void> worker() async {
+      while (next < count) {
+        await task(next++);
+      }
+    }
+
+    await Future.wait([for (var w = 0; w < min(_concurrency, count); w++) worker()]);
   }
 
   static FilterOptionGroup _newestFirst() =>
@@ -218,30 +249,14 @@ class DevicePhotoLibraryService implements PhotoLibraryService {
   /// largest file, which is usually the most detailed.
   Future<List<DuplicateGroup>> _findSimilar(
     List<Photo> photos,
-    Map<String, AssetEntity> entities, {
+    Map<String, AssetEntity> entities,
+    Future<_Fingerprint?> Function(AssetEntity) fingerprintOf, {
     required Set<String> exclude,
   }) async {
-    final candidates = photos.where((p) => p.type == MediaType.photo && !exclude.contains(p.id)).toList()
-      ..sort((a, b) => a.takenAt.compareTo(b.takenAt));
+    final runs = _burstRuns(photos.where((p) => p.type == MediaType.photo && !exclude.contains(p.id)));
 
-    // 1. Cheap pass: runs of photos close in time with matching size & album.
-    final runs = <List<Photo>>[];
-    var run = <Photo>[];
-    bool fits(Photo a, Photo b) =>
-        b.takenAt.difference(a.takenAt) <= _burstGap &&
-        a.width == b.width &&
-        a.height == b.height &&
-        a.album == b.album;
-    for (final p in candidates) {
-      if (run.isNotEmpty && !fits(run.last, p)) {
-        if (run.length > 1) runs.add(run);
-        run = [];
-      }
-      run.add(p);
-    }
-    if (run.length > 1) runs.add(run);
-
-    // 2. Visual pass: split each run where neighbouring shots stop looking alike.
+    // Visual pass: split each run where neighbouring shots stop looking alike.
+    // Fingerprints were computed during the scan; the cache fills any gaps.
     final groups = <DuplicateGroup>[];
     void addGroup(List<Photo> list) {
       if (list.length < 2) return;
@@ -257,8 +272,12 @@ class DevicePhotoLibraryService implements PhotoLibraryService {
       );
     }
 
-    for (final r in runs) {
-      final hashes = await Future.wait([for (final p in r) _fingerprint(entities[p.id])]);
+    final hashesPerRun = await Future.wait([
+      for (final r in runs) Future.wait([for (final p in r) fingerprintOf(entities[p.id]!)]),
+    ]);
+    for (var n = 0; n < runs.length; n++) {
+      final r = runs[n];
+      final hashes = hashesPerRun[n];
       var cluster = <Photo>[];
       _Fingerprint? anchor;
       for (var i = 0; i < r.length; i++) {
@@ -277,11 +296,32 @@ class DevicePhotoLibraryService implements PhotoLibraryService {
     return groups.reversed.toList(); // newest bursts first
   }
 
+  /// Cheap pass: runs of photos close in time with matching size & album.
+  static List<List<Photo>> _burstRuns(Iterable<Photo> photos) {
+    final sorted = photos.toList()..sort((a, b) => a.takenAt.compareTo(b.takenAt));
+    final runs = <List<Photo>>[];
+    var run = <Photo>[];
+    bool fits(Photo a, Photo b) =>
+        b.takenAt.difference(a.takenAt) <= _burstGap &&
+        a.width == b.width &&
+        a.height == b.height &&
+        a.album == b.album;
+    for (final p in sorted) {
+      if (run.isNotEmpty && !fits(run.last, p)) {
+        if (run.length > 1) runs.add(run);
+        run = [];
+      }
+      run.add(p);
+    }
+    if (run.length > 1) runs.add(run);
+    return runs;
+  }
+
   /// Layout + colour fingerprint of a photo, from an 8×8 thumbnail.
   static Future<_Fingerprint?> _fingerprint(AssetEntity? e) async {
     if (e == null) return null;
     try {
-      final bytes = await e.thumbnailDataWithSize(const ThumbnailSize.square(64), format: ThumbnailFormat.png);
+      final bytes = await e.thumbnailDataWithSize(const ThumbnailSize.square(64), format: ThumbnailFormat.jpeg, quality: 80);
       if (bytes == null) return null;
       final codec = await ui.instantiateImageCodec(bytes, targetWidth: 8, targetHeight: 8);
       final frame = await codec.getNextFrame();
@@ -435,20 +475,15 @@ class DevicePhotoLibraryService implements PhotoLibraryService {
     if (path == null) return const [];
 
     final count = min(await path.assetCountAsync, scanLimit);
-    final entities = <AssetEntity>[];
-    for (var start = 0; start < count; start += 250) {
-      entities.addAll(await path.getAssetListRange(start: start, end: min(start + 250, count)));
-    }
+    final entities = count == 0 ? <AssetEntity>[] : await path.getAssetListRange(start: 0, end: count);
 
     // Items older than the main scan still need their real file size.
     final unknown = entities.where((e) => !s.known.containsKey(e.id)).toList();
-    for (var i = 0; i < unknown.length; i += 40) {
-      final chunk = unknown.sublist(i, min(i + 40, unknown.length));
-      final sizes = await Future.wait(chunk.map(_fileSize));
-      for (var j = 0; j < chunk.length; j++) {
-        s.known[chunk[j].id] = _toPhoto(chunk[j], sizes[j]);
-        s.entities[chunk[j].id] = chunk[j]; // so they can be deleted too
-      }
+    final sizes = List<int>.filled(unknown.length, 0);
+    await _forEachPooled(unknown.length, (i) async => sizes[i] = await _fileSize(unknown[i]));
+    for (var i = 0; i < unknown.length; i++) {
+      s.known[unknown[i].id] = _toPhoto(unknown[i], sizes[i]);
+      s.entities[unknown[i].id] = unknown[i]; // so they can be deleted too
     }
     return [for (final e in entities) s.known[e.id]!];
   }
