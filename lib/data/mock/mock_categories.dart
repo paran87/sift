@@ -9,7 +9,7 @@ abstract final class MockCategories {
     PhotoCategory(
       kind: CategoryKind.all,
       title: 'All Photos',
-      description: 'Everything in your library',
+      description: 'Everything on your phone',
       count: 1248,
       sizeBytes: (18.6 * _gb).round(),
       reviewed: 742,
@@ -27,7 +27,7 @@ abstract final class MockCategories {
     PhotoCategory(
       kind: CategoryKind.videos,
       title: 'Videos',
-      description: 'Biggest space savers',
+      description: 'Often the biggest space savers',
       count: 86,
       sizeBytes: (9.2 * _gb).round(),
       reviewed: 24,
@@ -35,8 +35,8 @@ abstract final class MockCategories {
     ),
     PhotoCategory(
       kind: CategoryKind.largeFiles,
-      title: 'Large Files',
-      description: 'Over 25 MB each',
+      title: 'Big Files',
+      description: 'Take up the most space',
       count: 47,
       sizeBytes: (6.1 * _gb).round(),
       reviewed: 12,
@@ -44,8 +44,8 @@ abstract final class MockCategories {
     ),
     PhotoCategory(
       kind: CategoryKind.duplicates,
-      title: 'Duplicates',
-      description: 'Exact copies',
+      title: 'Same Photos',
+      description: 'The same photo saved twice',
       count: 126,
       sizeBytes: (486 * _mb).round(),
       reviewed: 88,
@@ -54,7 +54,7 @@ abstract final class MockCategories {
     PhotoCategory(
       kind: CategoryKind.similar,
       title: 'Similar Photos',
-      description: 'Bursts & near-identical shots',
+      description: 'Almost the same picture, taken together',
       count: 214,
       sizeBytes: (1.2 * _gb).round(),
       reviewed: 64,
@@ -63,7 +63,7 @@ abstract final class MockCategories {
     PhotoCategory(
       kind: CategoryKind.oldPhotos,
       title: 'Old Photos',
-      description: 'Taken over 2 years ago',
+      description: 'From over 2 years ago',
       count: 402,
       sizeBytes: (3.1 * _gb).round(),
       reviewed: 253,

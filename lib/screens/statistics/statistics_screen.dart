@@ -28,9 +28,9 @@ class StatisticsScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(AppSpacing.gutter, AppSpacing.lg, AppSpacing.gutter, AppSpacing.xxl),
             children: [
-              Text('Insights', style: context.text.headlineLarge),
+              Text('Your progress', style: context.text.headlineLarge),
               const SizedBox(height: 2),
-              Text('How your library has been shaping up.', style: context.text.bodyLarge),
+              Text('See how much you have cleaned up.', style: context.text.bodyLarge),
               const SizedBox(height: AppSpacing.xl),
               if (stats == null)
                 const Skeleton(height: 200, radius: AppRadius.card)
@@ -78,7 +78,7 @@ class _RecoveredHero extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'SPACE RECOVERED',
+                  'SPACE FREED UP',
                   style: context.text.labelSmall?.copyWith(color: white.withValues(alpha: 0.7), letterSpacing: 1.4),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -132,7 +132,7 @@ class _TileGrid extends StatelessWidget {
       StatTile(
         icon: Icons.timer_outlined,
         color: c.warning,
-        label: 'Sessions · ~${stats.averageSessionMinutes} min each',
+        label: 'Cleaning sessions',
         value: stats.sessions,
       ),
     ];
@@ -166,7 +166,7 @@ class _MonthlyCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text('Monthly activity', style: context.text.titleMedium)),
+              Expanded(child: Text('Month by month', style: context.text.titleMedium)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -212,7 +212,7 @@ class _RatioCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Keep vs. delete', style: context.text.titleMedium),
+          Text('Kept and deleted', style: context.text.titleMedium),
           const SizedBox(height: 2),
           Text('You keep about ${(keepPct * 100).round()}% of what you review.', style: context.text.bodySmall),
           const SizedBox(height: AppSpacing.md),
@@ -310,7 +310,7 @@ class _NoInsightsYet extends StatelessWidget {
             child: Icon(Icons.insights_rounded, color: c.accent, size: 34),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text('No insights yet', style: context.text.titleLarge),
+          Text('Nothing to show yet', style: context.text.titleLarge),
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Review a few photos and your progress, space saved and streaks will show up here.',

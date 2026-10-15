@@ -38,36 +38,36 @@ class SettingsScreen extends StatelessWidget {
                 child: _ThemePicker(value: s.themeMode, onChanged: (v) => s.themeMode = v),
               ),
               const SizedBox(height: AppSpacing.xl),
-              const _GroupLabel('Interaction'),
+              const _GroupLabel('Swiping'),
               _Group(
                 children: [
                   _SwitchTile(
                     icon: Icons.vibration_rounded,
                     color: c.accent,
-                    title: 'Haptic feedback',
-                    subtitle: 'Gentle taps when you swipe',
+                    title: 'Vibration',
+                    subtitle: 'A small buzz when you swipe',
                     value: s.haptics,
                     onChanged: (v) => s.haptics = v,
                   ),
                   _SliderTile(
                     icon: Icons.swipe_rounded,
                     color: c.keep,
-                    title: 'Swipe sensitivity',
+                    title: 'How far to swipe',
                     value: s.sensitivity,
                     onChanged: (v) => s.sensitivity = v,
                   ),
                   _SwitchTile(
                     icon: Icons.animation_rounded,
                     color: c.warning,
-                    title: 'Reduce motion',
-                    subtitle: 'Shorter, simpler animations',
+                    title: 'Calmer screen',
+                    subtitle: 'Less movement and animation',
                     value: s.reduceMotion,
                     onChanged: (v) => s.reduceMotion = v,
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.xl),
-              const _GroupLabel('Cleaning'),
+              const _GroupLabel('Your photos'),
               _Group(
                 children: [
                   _NavTile(
@@ -85,22 +85,22 @@ class SettingsScreen extends StatelessWidget {
                   _SwitchTile(
                     icon: Icons.verified_user_outlined,
                     color: c.delete,
-                    title: 'Confirm before deleting',
-                    subtitle: 'Ask before emptying Trash',
+                    title: 'Ask before deleting',
+                    subtitle: 'Show a question first, so nothing is deleted by accident',
                     value: s.confirmBeforeDelete,
                     onChanged: (v) => s.confirmBeforeDelete = v,
                   ),
                   _NavTile(
                     icon: Icons.undo_rounded,
                     color: c.accent,
-                    title: 'Undo history',
-                    trailing: '${s.undoSteps} steps',
+                    title: 'Undo',
+                    trailing: s.undoSteps == 1 ? 'Last swipe' : 'Last ${s.undoSteps} swipes',
                     onTap: () => _pickUndo(context, s),
                   ),
                   _NavTile(
                     icon: Icons.sort_rounded,
                     color: c.warning,
-                    title: 'Photo order',
+                    title: 'Show photos',
                     trailing: s.photoOrder.label,
                     onTap: () => _pickOrder(context, s),
                   ),
@@ -117,27 +117,15 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () => _info(
                       context,
                       'Privacy',
-                      'Sift works entirely on your device. Your photos are never uploaded, analysed in the cloud, or shared.',
+                      'Sift works entirely on your device. Your photos are never uploaded, looked at online, or shared.',
                     ),
                   ),
                   _NavTile(
                     icon: Icons.help_outline_rounded,
                     color: c.accent,
-                    title: 'Help',
+                    title: 'How it works',
                     onTap: () => AppRouter.toOnboarding(context),
-                    trailing: 'Replay tour',
-                  ),
-                  _NavTile(
-                    icon: Icons.star_outline_rounded,
-                    color: c.warning,
-                    title: 'Rate the app',
-                    onTap: () => showAppSnack(context, 'Thanks! Rating opens in the store version.'),
-                  ),
-                  _NavTile(
-                    icon: Icons.ios_share_rounded,
-                    color: c.textSecondary,
-                    title: 'Share the app',
-                    onTap: () => showAppSnack(context, 'Sharing opens in the store version.'),
+                    trailing: 'Show the tour again',
                   ),
                   _NavTile(
                     icon: Icons.info_outline_rounded,
@@ -171,12 +159,12 @@ class SettingsScreen extends StatelessWidget {
               Center(
                 child: TextButton.icon(
                   onPressed: () async {
-                    showAppSnack(context, 'Rescanning your library…');
+                    showAppSnack(context, 'Looking at your photos again…');
                     await LibraryScope.read(context).reset();
-                    if (context.mounted) showAppSnack(context, 'Library rescanned');
+                    if (context.mounted) showAppSnack(context, 'Done. Your photos are up to date');
                   },
                   icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('Rescan library'),
+                  label: const Text('Refresh my photos'),
                   style: TextButton.styleFrom(foregroundColor: c.textTertiary),
                 ),
               ),
@@ -194,10 +182,10 @@ class SettingsScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Photo order', style: context.text.titleLarge),
+          Text('Show photos', style: context.text.titleLarge),
           const SizedBox(height: 4),
           Text(
-            'The order of albums and cleaning sessions, by the date each photo was taken.',
+            'Choose whether you see your newest or your oldest photos first.',
             style: context.text.bodyMedium,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -227,9 +215,9 @@ class SettingsScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Undo history', style: context.text.titleLarge),
+          Text('Undo', style: context.text.titleLarge),
           const SizedBox(height: 4),
-          Text('How many recent swipes you can take back.', style: context.text.bodyMedium),
+          Text('How many of your last swipes you can take back.', style: context.text.bodyMedium),
           const SizedBox(height: AppSpacing.md),
           for (final n in const [1, 5, 10, 25])
             ListTile(
@@ -272,10 +260,10 @@ class SettingsScreen extends StatelessWidget {
           const AppLogo(size: 72),
           const SizedBox(height: AppSpacing.md),
           Text('Sift', style: context.text.headlineMedium),
-          Text('Version 1.0.0 · UI preview', style: context.text.bodySmall),
+          Text('Version 1.0.0', style: context.text.bodySmall),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'A calmer way to clean up your photo library.',
+            'A simple way to clean up your photos.',
             textAlign: TextAlign.center,
             style: context.text.bodyMedium,
           ),
@@ -456,7 +444,7 @@ class _SliderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Relaxed', 'Normal', 'Quick'];
+    const labels = ['Long', 'Normal', 'Short'];
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.xs),
       child: Column(
@@ -488,8 +476,8 @@ class _SliderTile extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Longer swipe', style: context.text.bodySmall),
-                Text('Shorter swipe', style: context.text.bodySmall),
+                Text('Swipe farther', style: context.text.bodySmall),
+                Text('Swipe less', style: context.text.bodySmall),
               ],
             ),
           ),

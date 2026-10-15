@@ -85,13 +85,13 @@ class ProgressScreen extends StatelessWidget {
                   _Metric(
                     icon: Icons.cloud_queue_rounded,
                     color: c.accent,
-                    label: 'Potential',
+                    label: 'Can free up',
                     value: Fmt.bytes(o.recoverableBytes),
                   ),
                   _Metric(
                     icon: Icons.cloud_done_rounded,
                     color: c.warning,
-                    label: 'Recovered',
+                    label: 'Freed up',
                     value: Fmt.bytes(o.recoveredBytes),
                   ),
                 ],

@@ -260,10 +260,10 @@ class _TopBar extends StatelessWidget {
           CategoryKind.all => 'All photos',
           CategoryKind.screenshots => 'Screenshots',
           CategoryKind.videos => 'Videos',
-          CategoryKind.largeFiles => 'Large files',
+          CategoryKind.largeFiles => 'Big files',
           CategoryKind.oldPhotos => 'Old photos',
-          CategoryKind.duplicates => 'Duplicates',
-          CategoryKind.similar => 'Similar',
+          CategoryKind.duplicates => 'Same photos',
+          CategoryKind.similar => 'Similar photos',
         };
     final position = s == null ? 0 : (s.index + 1).clamp(1, s.total == 0 ? 1 : s.total);
 
@@ -516,11 +516,6 @@ class _PhotoDetailsSheet extends StatelessWidget {
       ),
     );
 
-    void mock(String message) {
-      Navigator.of(context).pop();
-      showAppSnack(context, message);
-    }
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -531,21 +526,10 @@ class _PhotoDetailsSheet extends StatelessWidget {
         if (photo.location != null) row(Icons.place_outlined, 'Location', photo.location!),
         if (photo.album != null) row(Icons.folder_outlined, 'Album', photo.album!),
         row(Icons.sd_storage_outlined, 'Size', Fmt.bytes(photo.sizeBytes)),
-        row(Icons.aspect_ratio_rounded, 'Dimensions', '${photo.width} × ${photo.height}'),
         const SizedBox(height: AppSpacing.sm),
         const Divider(),
         const SizedBox(height: AppSpacing.xs),
-        SheetAction(
-          icon: Icons.favorite_border_rounded,
-          label: 'Add to Favorites',
-          onTap: () => mock('Added to Favorites'),
-        ),
-        SheetAction(
-          icon: Icons.ios_share_rounded,
-          label: 'Share',
-          onTap: () => mock('Sharing is available in the full version'),
-        ),
-        SheetAction(icon: Icons.flag_outlined, label: 'Finish session', onTap: onFinish),
+        SheetAction(icon: Icons.flag_outlined, label: 'I’m done for now', onTap: onFinish),
       ],
     );
   }

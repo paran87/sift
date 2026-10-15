@@ -115,12 +115,12 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
                     NavigationDestination(
                       icon: Icon(Icons.grid_view_outlined),
                       selectedIcon: Icon(Icons.grid_view_rounded),
-                      label: 'Library',
+                      label: 'Photos',
                     ),
                     NavigationDestination(
                       icon: Icon(Icons.insights_outlined),
                       selectedIcon: Icon(Icons.insights_rounded),
-                      label: 'Insights',
+                      label: 'Progress',
                     ),
                     NavigationDestination(
                       icon: Icon(Icons.settings_outlined),

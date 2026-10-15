@@ -39,7 +39,7 @@ class CategoriesScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Expanded(child: Text('Library', style: context.text.headlineLarge)),
+                          Expanded(child: Text('Photos', style: context.text.headlineLarge)),
                           const PhotoOrderToggle(),
                         ],
                       ),

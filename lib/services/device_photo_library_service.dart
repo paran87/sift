@@ -417,13 +417,13 @@ class DevicePhotoLibraryService implements PhotoLibraryService {
     }
 
     return [
-      cat(CategoryKind.all, 'All Photos', 'Everything in your library'),
+      cat(CategoryKind.all, 'All Photos', 'Everything on your phone'),
       cat(CategoryKind.screenshots, 'Screenshots', 'Usually safe to clear'),
-      cat(CategoryKind.videos, 'Videos', 'Biggest space savers'),
-      cat(CategoryKind.largeFiles, 'Large Files', 'Over 25 MB each'),
-      cat(CategoryKind.duplicates, 'Duplicates', 'Exact copies'),
-      cat(CategoryKind.similar, 'Similar Photos', 'Bursts & near-identical shots'),
-      cat(CategoryKind.oldPhotos, 'Old Photos', 'Taken over 2 years ago'),
+      cat(CategoryKind.videos, 'Videos', 'Often the biggest space savers'),
+      cat(CategoryKind.largeFiles, 'Big Files', 'Take up the most space'),
+      cat(CategoryKind.duplicates, 'Same Photos', 'The same photo saved twice'),
+      cat(CategoryKind.similar, 'Similar Photos', 'Almost the same picture, taken together'),
+      cat(CategoryKind.oldPhotos, 'Old Photos', 'From over 2 years ago'),
     ];
   }
 

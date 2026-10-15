@@ -91,7 +91,7 @@ class _Content extends StatelessWidget {
                         icon: Icons.cloud_done_rounded,
                         color: context.colors.keep,
                         value: Fmt.bytes(o.recoverableBytes),
-                        label: 'Potential cleanup',
+                        label: 'You can free up',
                         onTap: () => AppRouter.toProgress(context),
                       ),
                     ),
@@ -109,7 +109,7 @@ class _Content extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.xxl),
-              SectionHeader(title: 'Smart picks', actionLabel: 'See all', onAction: () => onOpenTab(1)),
+              SectionHeader(title: 'Good places to start', actionLabel: 'See all', onAction: () => onOpenTab(1)),
             ],
           ),
         ),
@@ -134,7 +134,7 @@ class _Content extends StatelessWidget {
             children: [
               SectionHeader(
                 title: 'Cleaning progress',
-                actionLabel: 'Details',
+                actionLabel: 'See more',
                 onAction: () => AppRouter.toProgress(context),
               ),
               _Entrance(index: 3, child: _ProgressCard(overview: o)),
@@ -478,7 +478,7 @@ class _ProgressCard extends StatelessWidget {
             runSpacing: AppSpacing.xs,
             children: [
               _Legend(color: c.keep, label: 'Kept ${Fmt.number(overview.kept)}'),
-              _Legend(color: c.delete, label: 'Marked ${Fmt.number(overview.markedForDeletion)}'),
+              _Legend(color: c.delete, label: 'To delete ${Fmt.number(overview.markedForDeletion)}'),
               _Legend(color: c.surfaceMuted, label: 'Left ${Fmt.number(overview.remaining)}'),
             ],
           ),

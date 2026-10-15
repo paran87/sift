@@ -29,7 +29,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
   final Set<String> _selected = {};
   final Set<String> _collapsing = {};
 
-  String get _title => widget.kind == GroupKind.duplicate ? 'Duplicates' : 'Similar Photos';
+  String get _title => widget.kind == GroupKind.duplicate ? 'Same Photos' : 'Similar Photos';
 
   @override
   void didChangeDependencies() {
@@ -271,7 +271,7 @@ class _Summary extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           AppButton(
-            label: 'Smart select',
+            label: 'Pick for me',
             icon: Icons.auto_awesome_rounded,
             large: false,
             expanded: false,

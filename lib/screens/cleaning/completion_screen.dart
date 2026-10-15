@@ -140,14 +140,14 @@ class _CompletionScreenState extends State<CompletionScreen> with SingleTickerPr
                                         _Row(
                                           icon: Icons.close_rounded,
                                           color: c.delete,
-                                          label: 'Marked for deletion',
+                                          label: 'Chosen to delete',
                                           value: s.marked,
                                         ),
                                         if (hasMarked) ...[
                                           const Divider(height: AppSpacing.xl),
                                           Row(
                                             children: [
-                                              Text('Potential space', style: context.text.titleSmall),
+                                              Text('Space you can free', style: context.text.titleSmall),
                                               const Spacer(),
                                               CountUpText(
                                                 value: s.markedBytes,
