@@ -14,6 +14,50 @@ import '../../widgets/photo_view.dart';
 import '../../widgets/pressable.dart';
 import '../../widgets/progress_widgets.dart';
 
+/// Confirms, then really removes [photos] from the phone's gallery: they move
+/// to the system Recycle Bin (Android 11+ / iOS) after the system's own
+/// confirmation. Returns what was actually deleted (empty if cancelled/failed).
+Future<List<Photo>> deletePhotosFlow(BuildContext context, List<Photo> photos) async {
+  if (photos.isEmpty) return const [];
+  final settings = SettingsScope.read(context);
+  final recoverable = LibraryScope.read(context).deletionRecoverable;
+  final bytes = photos.fold<int>(0, (s, p) => s + p.sizeBytes);
+  if (settings.confirmBeforeDelete) {
+    final ok = await AppDialog.confirm(
+      context,
+      icon: Icons.delete_forever_rounded,
+      title: 'Delete ${Fmt.plural(photos.length, 'item')}?',
+      message: recoverable
+          ? 'They’ll move to your phone’s Recycle Bin, where you can restore them for 30 days. '
+                'Your phone will ask you to confirm.'
+          : 'This frees ${Fmt.bytes(bytes)} and can’t be undone. Your phone will ask you to confirm.',
+      confirmLabel: recoverable ? 'Delete' : 'Delete permanently',
+      destructive: true,
+    );
+    if (!ok || !context.mounted) return const [];
+  }
+  final deleted = await showGeneralDialog<List<Photo>>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.black.withValues(alpha: 0.5),
+    transitionDuration: AppDurations.medium,
+    transitionBuilder: (context, anim, _, child) => FadeTransition(opacity: anim, child: child),
+    pageBuilder: (dialogContext, _, _) => _DeletingDialog(photos: photos, bytes: bytes),
+  );
+  if (!context.mounted) return deleted ?? const [];
+  if (deleted == null) {
+    showAppSnack(context, 'Couldn’t delete. Please try again.');
+    return const [];
+  }
+  if (deleted.isEmpty) {
+    showAppSnack(context, 'Nothing was deleted');
+    return const [];
+  }
+  final freed = deleted.fold<int>(0, (s, p) => s + p.sizeBytes);
+  showAppSnack(context, '${Fmt.bytes(freed)} freed up');
+  return deleted;
+}
+
 class TrashScreen extends StatefulWidget {
   const TrashScreen({super.key});
 
@@ -60,46 +104,12 @@ class _TrashScreenState extends State<TrashScreen> {
   }
 
   Future<void> _delete(List<Photo> photos) async {
-    final settings = SettingsScope.read(context);
-    final recoverable = LibraryScope.read(context).deletionRecoverable;
-    final bytes = photos.fold<int>(0, (s, p) => s + p.sizeBytes);
-    if (settings.confirmBeforeDelete) {
-      final ok = await AppDialog.confirm(
-        context,
-        icon: Icons.delete_forever_rounded,
-        title: 'Delete ${Fmt.plural(photos.length, 'item')}?',
-        message: recoverable
-            ? 'They’ll move to your phone’s Recycle Bin, where you can restore them for 30 days. '
-                  'Your phone will ask you to confirm.'
-            : 'This frees ${Fmt.bytes(bytes)} and can’t be undone. Your phone will ask you to confirm.',
-        confirmLabel: recoverable ? 'Delete' : 'Delete permanently',
-        destructive: true,
-      );
-      if (!ok || !mounted) return;
-    }
-    final deleted = await showGeneralDialog<List<Photo>>(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
-      transitionDuration: AppDurations.medium,
-      transitionBuilder: (context, anim, _, child) => FadeTransition(opacity: anim, child: child),
-      pageBuilder: (dialogContext, _, _) => _DeletingDialog(photos: photos, bytes: bytes),
-    );
-    if (!mounted) return;
-    if (deleted == null) {
-      showAppSnack(context, 'Couldn’t delete. Please try again.');
-      return;
-    }
-    if (deleted.isEmpty) {
-      showAppSnack(context, 'Nothing was deleted');
-      return;
-    }
+    final deleted = await deletePhotosFlow(context, photos);
+    if (!mounted || deleted.isEmpty) return;
     setState(() {
       _selected.clear();
       _selecting = false;
     });
-    final freed = deleted.fold<int>(0, (s, p) => s + p.sizeBytes);
-    showAppSnack(context, '${Fmt.bytes(freed)} freed up');
   }
 
   @override

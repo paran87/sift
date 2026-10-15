@@ -12,6 +12,7 @@ import '../../state/app_scope.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/progress_widgets.dart';
+import '../trash/trash_screen.dart';
 
 class CompletionScreen extends StatefulWidget {
   const CompletionScreen({super.key, required this.summary});
@@ -41,6 +42,14 @@ class _CompletionScreenState extends State<CompletionScreen> with SingleTickerPr
   void dispose() {
     _c.dispose();
     super.dispose();
+  }
+
+  /// Moves everything marked in the Trash to the phone's Recycle Bin.
+  Future<void> _deleteNow() async {
+    final store = LibraryScope.read(context);
+    final deleted = await deletePhotosFlow(context, store.trash);
+    if (!mounted || deleted.isEmpty) return;
+    Navigator.of(context).pop();
   }
 
   @override
@@ -112,7 +121,7 @@ class _CompletionScreenState extends State<CompletionScreen> with SingleTickerPr
                                   const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     hasMarked
-                                        ? 'Session complete. Your marked photos are waiting in Trash.'
+                                        ? 'Session complete. Delete your marked photos now, or review them first.'
                                         : 'Session complete. Everything was a keeper.',
                                     textAlign: TextAlign.center,
                                     style: context.text.bodyLarge,
@@ -169,7 +178,14 @@ class _CompletionScreenState extends State<CompletionScreen> with SingleTickerPr
                         children: [
                           if (hasMarked) ...[
                             AppButton(
-                              label: 'Review Deleted Photos',
+                              label: 'Delete ${Fmt.plural(s.marked, 'photo')}',
+                              icon: Icons.delete_forever_rounded,
+                              variant: AppButtonVariant.destructive,
+                              onPressed: _deleteNow,
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            AppButton.secondary(
+                              label: 'Review in Trash first',
                               icon: Icons.delete_outline_rounded,
                               onPressed: () => AppRouter.toTrash(context, replace: true),
                             ),
