@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_application_1/app.dart';
-import 'package:flutter_application_1/services/mock_photo_library_service.dart';
+import 'package:sift/app.dart';
+import 'package:sift/services/mock_photo_library_service.dart';
 
 void main() {
   testWidgets('splash shows brand and moves to onboarding', (tester) async {
